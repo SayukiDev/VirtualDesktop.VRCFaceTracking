@@ -12,8 +12,9 @@ namespace VirtualDesktop.FaceTracking
 
         #region Static Fields
         public static readonly FaceState Identity = new FaceState {  LeftEyePose = Pose.Identity, RightEyePose = Pose.Identity };
+        public byte FaceFlags;
         #endregion
-
+        
         #region Fields
         [MarshalAs(UnmanagedType.I1)]
         public bool FaceIsValid;
