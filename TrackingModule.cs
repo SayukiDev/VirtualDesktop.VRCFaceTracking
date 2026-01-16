@@ -296,11 +296,20 @@ namespace VirtualDesktop.FaceTracking
 
             // Tongue Expression Set
             // Future placeholder
-            unifiedExpressions[(int)UnifiedExpressions.TongueTwistRight].Weight = expressions[(int)Expressions.TongueTipInterdental];
-            unifiedExpressions[(int)UnifiedExpressions.TongueLeft].Weight = expressions[(int)Expressions.TongueTipAlveolar];
-            unifiedExpressions[(int)UnifiedExpressions.TongueRight].Weight = expressions[(int)Expressions.TongueFrontDorsalPalate];
-            unifiedExpressions[(int)UnifiedExpressions.TongueUp].Weight = expressions[(int)Expressions.TongueMidDorsalPalate];
-            unifiedExpressions[(int)UnifiedExpressions.TongueDown].Weight = expressions[(int)Expressions.TongueBackDorsalVelar];
+            if (isGXR)
+            {
+                unifiedExpressions[(int)UnifiedExpressions.TongueTwistRight].Weight = expressions[(int)Expressions.TongueTipInterdental];
+                unifiedExpressions[(int)UnifiedExpressions.TongueLeft].Weight = expressions[(int)Expressions.TongueTipAlveolar];
+                unifiedExpressions[(int)UnifiedExpressions.TongueRight].Weight = expressions[(int)Expressions.TongueFrontDorsalPalate];
+                unifiedExpressions[(int)UnifiedExpressions.TongueUp].Weight = expressions[(int)Expressions.TongueMidDorsalPalate];
+                unifiedExpressions[(int)UnifiedExpressions.TongueDown].Weight = expressions[(int)Expressions.TongueBackDorsalVelar];
+            }
+            else
+            {
+                unifiedExpressions[(int)UnifiedExpressions.TongueOut].Weight = expressions[(int)Expressions.TongueOut];
+                unifiedExpressions[(int)UnifiedExpressions.TongueCurlUp].Weight = expressions[(int)Expressions.TongueTipAlveolar];
+            }
+            
 
         }
         #endregion
