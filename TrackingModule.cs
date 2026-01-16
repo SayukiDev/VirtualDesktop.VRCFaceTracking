@@ -298,7 +298,7 @@ namespace VirtualDesktop.FaceTracking
             // Future placeholder
             if (isGXR)
             {
-                unifiedExpressions[(int)UnifiedExpressions.TongueTwistRight].Weight = expressions[(int)Expressions.TongueTipInterdental];
+                unifiedExpressions[(int)UnifiedExpressions.TongueOut].Weight = expressions[(int)Expressions.TongueTipInterdental];
                 unifiedExpressions[(int)UnifiedExpressions.TongueLeft].Weight = expressions[(int)Expressions.TongueTipAlveolar];
                 unifiedExpressions[(int)UnifiedExpressions.TongueRight].Weight = expressions[(int)Expressions.TongueFrontDorsalPalate];
                 unifiedExpressions[(int)UnifiedExpressions.TongueUp].Weight = expressions[(int)Expressions.TongueMidDorsalPalate];
@@ -309,8 +309,6 @@ namespace VirtualDesktop.FaceTracking
                 unifiedExpressions[(int)UnifiedExpressions.TongueOut].Weight = expressions[(int)Expressions.TongueOut];
                 unifiedExpressions[(int)UnifiedExpressions.TongueCurlUp].Weight = expressions[(int)Expressions.TongueTipAlveolar];
             }
-            
-
         }
         #endregion
     }
