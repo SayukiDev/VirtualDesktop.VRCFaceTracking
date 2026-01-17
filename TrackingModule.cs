@@ -175,10 +175,10 @@ namespace VirtualDesktop.FaceTracking
             #region Eye Openness parsing
 
             eye.Left.Openness = 
-                1.0f - (float)Math.Max(0, Math.Min(1, expressions[(int)Expressions.EyesClosedL]
+                1.0f - (float)Math.Max(0, Math.Min(1, expressions[(int)Expressions.EyesClosedL]*1.5f
                 + expressions[(int)Expressions.CheekRaiserL] * expressions[(int)Expressions.LidTightenerL]));
             eye.Right.Openness =
-                1.0f - (float)Math.Max(0, Math.Min(1, expressions[(int)Expressions.EyesClosedR]
+                1.0f - (float)Math.Max(0, Math.Min(1, expressions[(int)Expressions.EyesClosedR]/1.5f
                 + expressions[(int)Expressions.CheekRaiserR] * expressions[(int)Expressions.LidTightenerR]));
 
             #endregion
