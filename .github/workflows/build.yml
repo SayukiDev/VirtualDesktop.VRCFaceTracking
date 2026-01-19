@@ -1,0 +1,30 @@
+name: .NET build
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Restore dependencies
+        run: dotnet restore
+      - name: Build
+        run: dotnet publish -c Release --no-restore
+      - name: Print Folder Tree
+        run: ls bin/Release/net7.0-windows/
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        with:
+          files: |
+            bin/Release/net7.0-windows/VirtualDesktop.VRCFaceTracking.zip
