@@ -3,16 +3,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.MemoryMappedFiles;
-using System.Linq.Expressions;
-using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 using System.Threading;
 using VRCFaceTracking;
 using VRCFaceTracking.Core.Library;
 using VRCFaceTracking.Core.Params.Data;
 using VRCFaceTracking.Core.Params.Expressions;
-using VRCFaceTracking.Core.Types;
-using Vector2 = VRCFaceTracking.Core.Types.Vector2;
 
 namespace VirtualDesktop.FaceTracking
 {
@@ -30,6 +27,7 @@ namespace VirtualDesktop.FaceTracking
         private bool _eyeAvailable, _expressionAvailable;
         private EventWaitHandle _faceStateEvent;
         private bool? _isTracking = null;
+        private float[] _scaleFactors = null;
         #endregion
 
         #region Properties
@@ -84,7 +82,30 @@ namespace VirtualDesktop.FaceTracking
                 Logger.LogError("[VirtualDesktop] Failed to open MemoryMappedFile. Make sure the Virtual Desktop Streamer (v1.30 or later) is running.");
                 return (false, false);
             }
-
+            
+            try
+            {
+                string filePath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "Virtual Desktop", "ftParams.json");
+                
+                if (File.Exists(filePath))
+                {
+                    string jsonContent = File.ReadAllText(filePath);
+                    _scaleFactors = JsonSerializer.Deserialize<float[]>(jsonContent);
+                    
+                    if (_scaleFactors != null)
+                    {
+                        Logger.LogInformation($"[VirtualDesktop] Loaded {_scaleFactors.Length} expression scale factors from {filePath}");
+                        Logger.LogDebug("[VirtualDesktop] Scale factors will be applied to a local copy of expression data, not affecting shared memory");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"[VirtualDesktop] Error loading scale parameters: {ex.Message}");
+            }
+            
             (_eyeAvailable, _expressionAvailable) = (eyeAvailable, expressionAvailable);
             return (_eyeAvailable, _expressionAvailable);
         }
@@ -135,18 +156,45 @@ namespace VirtualDesktop.FaceTracking
         #endregion
 
         #region Methods
+        
+        private float[] GetScaledParams()
+        {
+            
+            if (_scaleFactors == null || _scaleFactors.Length <= 0)
+            {
+                return null;
+            }
+            var originalExpressions = _faceState->ExpressionWeights;
+            float[] scaledExpressions = new float[FaceState.ExpressionCount];
+            for (int i = 0; i < FaceState.ExpressionCount; i++)
+            {
+                scaledExpressions[i] = originalExpressions[i];
+                
+                if (i < _scaleFactors.Length)
+                {
+                    scaledExpressions[i] *= _scaleFactors[i];
+                }
+                else
+                {
+                    break;
+                }
+            }
+            
+            return scaledExpressions;
+        }
+        
         /// <summary>
         /// Credit https://github.com/regzo2/VRCFaceTracking-QuestProOpenXR for calculations on converting from OpenXR weigths to VRCFT shapes
         /// </summary>
         private void UpdateTracking()
         {
             var isTracking = false;
-
+        
             var faceState = _faceState;
             if (faceState != null)
             {
-                var expressions = faceState->ExpressionWeights;
-
+                float[] expressions = GetScaledParams();
+        
                 if (_eyeAvailable && faceState->LeftEyeIsValid || faceState->RightEyeIsValid)
                 {                    
                     var leftEyePose = faceState->LeftEyePose;
@@ -170,15 +218,15 @@ namespace VirtualDesktop.FaceTracking
             IsTracking = isTracking;
         }
 
-        private void UpdateEyeData(UnifiedEyeData eye, float* expressions, Quaternion orientationL, Quaternion orientationR)
+        private void UpdateEyeData(UnifiedEyeData eye, float[] expressions, Quaternion orientationL, Quaternion orientationR)
         {
             #region Eye Openness parsing
 
             eye.Left.Openness = 
-                1.0f - (float)Math.Max(0, Math.Min(1, expressions[(int)Expressions.EyesClosedL]*1.5f
+                1.0f - (float)Math.Max(0, Math.Min(1, expressions[(int)Expressions.EyesClosedL]
                 + expressions[(int)Expressions.CheekRaiserL] * expressions[(int)Expressions.LidTightenerL]));
             eye.Right.Openness =
-                1.0f - (float)Math.Max(0, Math.Min(1, expressions[(int)Expressions.EyesClosedR]/1.5f
+                1.0f - (float)Math.Max(0, Math.Min(1, expressions[(int)Expressions.EyesClosedR]
                 + expressions[(int)Expressions.CheekRaiserR] * expressions[(int)Expressions.LidTightenerR]));
 
             #endregion
@@ -199,7 +247,7 @@ namespace VirtualDesktop.FaceTracking
             #endregion
         }
 
-        private void UpdateEyeExpressions(UnifiedExpressionShape[] unifiedExpressions, float* expressions)
+        private void UpdateEyeExpressions(UnifiedExpressionShape[] unifiedExpressions, float[] expressions)
         {
             // Eye Expressions Set
             unifiedExpressions[(int)UnifiedExpressions.EyeWideLeft].Weight = expressions[(int)Expressions.UpperLidRaiserL];
@@ -220,7 +268,7 @@ namespace VirtualDesktop.FaceTracking
             unifiedExpressions[(int)UnifiedExpressions.BrowLowererRight].Weight = expressions[(int)Expressions.BrowLowererR];
         }
 
-        private void UpdateMouthExpressions(UnifiedExpressionShape[] unifiedExpressions, float* expressions,bool isGXR = false)
+        private void UpdateMouthExpressions(UnifiedExpressionShape[] unifiedExpressions, float[] expressions,bool isGxr = false)
         {
             // Jaw Expression Set                        
             unifiedExpressions[(int)UnifiedExpressions.JawOpen].Weight = expressions[(int)Expressions.JawDrop];
@@ -296,7 +344,7 @@ namespace VirtualDesktop.FaceTracking
 
             // Tongue Expression Set
             // Future placeholder
-            if (isGXR)
+            if (isGxr)
             {
                 unifiedExpressions[(int)UnifiedExpressions.TongueOut].Weight = expressions[(int)Expressions.TongueTipInterdental];
                 unifiedExpressions[(int)UnifiedExpressions.TongueLeft].Weight = expressions[(int)Expressions.TongueTipAlveolar];
